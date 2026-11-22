@@ -180,9 +180,76 @@
 
 #call-window-body{
     position:relative;z-index:10;
-    flex:1;display:flex;flex-direction:column;
-    align-items:center;justify-content:center;
-    gap:10px;padding:4px 12px;
+    flex:1;overflow:hidden;padding:0;
+}
+#call-video-main{
+    position:absolute;inset:0;overflow:hidden;
+    background:#0b1220;
+}
+#call-video-main .call-video-bg,
+#call-video-self .call-video-bg{
+    position:absolute;inset:0;
+    background:
+        radial-gradient(ellipse at 50% 0%,rgba(var(--accent-color-rgb,224,105,138),.22),transparent 60%),
+        linear-gradient(160deg,#111a2e,#1c2740);
+}
+#call-video-main-icon,
+#call-video-self-icon{
+    position:absolute;inset:0;margin:auto;
+    display:flex;align-items:center;justify-content:center;
+    color:rgba(255,255,255,.5);pointer-events:none;
+}
+#call-video-main-icon{font-size:9vmin;}
+#call-video-self-icon{font-size:26px;}
+#call-video-main-img,
+#call-video-self-img{
+    position:absolute;inset:0;width:100%;height:100%;object-fit:cover;
+    display:none;animation:callVidFloat 26s ease-in-out infinite;
+}
+#call-video-main .call-video-scan,
+#call-video-self .call-video-scan{
+    position:absolute;left:0;right:0;height:34%;top:-40%;
+    background:linear-gradient(to bottom,transparent,rgba(255,255,255,.05),transparent);
+    animation:callVidScan 4.2s linear infinite;pointer-events:none;
+}
+#call-video-main .call-video-noise,
+#call-video-self .call-video-noise{
+    position:absolute;inset:0;pointer-events:none;opacity:.05;
+    background-image:repeating-linear-gradient(0deg,rgba(255,255,255,.6) 0 1px,transparent 1px 3px);
+    mix-blend-mode:overlay;animation:callVidNoise .18s steps(2) infinite;
+}
+#call-video-label{
+    position:absolute;top:10px;left:10px;z-index:3;
+    display:flex;align-items:center;gap:6px;
+    background:rgba(0,0,0,.34);backdrop-filter:blur(8px);
+    border:1px solid rgba(255,255,255,.1);border-radius:20px;
+    padding:4px 11px;color:#fff;font-size:12px;font-weight:600;
+}
+#call-video-label .call-rec-dot{width:6px;height:6px;}
+#call-video-self{
+    position:absolute;right:10px;bottom:10px;z-index:4;
+    width:30%;max-width:112px;min-width:60px;
+    aspect-ratio:3/4;overflow:hidden;border-radius:14px;
+    border:1.5px solid rgba(255,255,255,.22);
+    box-shadow:0 8px 24px rgba(0,0,0,.45);
+    background:#0b1220;
+}
+#call-video-self .call-video-self-label{
+    position:absolute;bottom:6px;left:6px;z-index:3;
+    font-size:10px;color:rgba(255,255,255,.85);font-weight:600;
+    background:rgba(0,0,0,.3);padding:1px 7px;border-radius:8px;
+}
+@keyframes callVidFloat{
+    0%,100%{transform:scale(1.02) translate(0,0)}
+    25%{transform:scale(1.08) translate(-1.5%,-1%)}
+    50%{transform:scale(1.05) translate(1%,1.5%)}
+    75%{transform:scale(1.1) translate(1.5%,-1%)}
+}
+@keyframes callVidScan{
+    0%{top:-40%}100%{top:110%}
+}
+@keyframes callVidNoise{
+    0%{transform:translateY(0)}50%{transform:translateY(1px)}100%{transform:translateY(0)}
 }
 .call-av-wrap{
     position:relative;
@@ -438,13 +505,24 @@ html:not([data-theme="dark"])[data-color-theme="black-white"] .message-sent{
     </div>
 
     <div id="call-window-body">
-      <div class="call-av-wrap">
-        <div class="call-av-pulse"></div>
-        <div class="call-av-pulse2"></div>
-        <div class="call-avatar" id="call-win-avatar"><i class="fas fa-user" id="call-win-av-icon"></i></div>
+      <div id="call-video-main">
+        <div class="call-video-bg"></div>
+        <i class="fas fa-user" id="call-video-main-icon"></i>
+        <img id="call-video-main-img" src="" alt="">
+        <div class="call-video-scan"></div>
+        <div class="call-video-noise"></div>
+        <div class="call-video-label">
+          <span class="call-rec-dot"></span>
+          <span id="call-video-name">对方</span>
+        </div>
       </div>
-      <div class="call-name" id="call-win-name">通话中</div>
-      <div class="call-wave"><span></span><span></span><span></span><span></span><span></span></div>
+      <div id="call-video-self">
+        <div class="call-video-bg"></div>
+        <i class="fas fa-user" id="call-video-self-icon"></i>
+        <img id="call-video-self-img" src="" alt="">
+        <div class="call-video-scan"></div>
+        <span class="call-video-self-label">我</span>
+      </div>
     </div>
 
     <button class="call-util-btn" id="call-immersive-btn" title="沉浸模式"><i class="fas fa-eye-slash"></i></button>
@@ -506,6 +584,27 @@ html:not([data-theme="dark"])[data-color-theme="black-white"] .message-sent{
         const img = document.querySelector('#partner-avatar img,[id*="partner-avatar"] img,.partner-avatar img');
         return img ? img.src : null;
     };
+    const getMyAvSrc = () => {
+        const img = document.querySelector('#my-avatar img,[id*="my-avatar"] img');
+        return img ? img.src : null;
+    };
+    function fillVideoFrames() {
+        const pSrc = getAvSrc();
+        const mSrc = getMyAvSrc();
+        const setFrame = (imgId, iconId, src) => {
+            const img = document.getElementById(imgId);
+            const icon = document.getElementById(iconId);
+            if (img) { img.src = src || ''; img.style.display = src ? 'block' : 'none'; }
+            if (icon) icon.style.display = src ? 'none' : 'flex';
+        };
+        setFrame('call-video-main-img', 'call-video-main-icon', pSrc);
+        setFrame('call-video-self-img', 'call-video-self-icon', mSrc);
+        const selfLabel = document.querySelector('.call-video-self-label');
+        if (selfLabel) {
+            const myName = (typeof settings !== 'undefined' && settings.myName) || '我';
+            selfLabel.textContent = myName;
+        }
+    }
     const getName = () => window.settings?.partnerName || document.getElementById('partner-name')?.textContent.trim() || '对方';
 
     function fillAv(avId) {
@@ -582,8 +681,10 @@ html:not([data-theme="dark"])[data-color-theme="black-white"] .message-sent{
         S.minimized = false; S.isPartnerCall = !!isPartner; S.immersive = false;
         document.getElementById('call-window')?.classList.remove('immersive');
 
-        ['call-inc-avatar','call-conn-avatar','call-win-avatar','call-mini-av'].forEach(fillAv);
-        ['call-conn-name','call-win-name','call-mini-name'].forEach(fillNm);
+        ['call-inc-avatar','call-conn-avatar','call-mini-av'].forEach(fillAv);
+        ['call-conn-name','call-mini-name'].forEach(fillNm);
+        fillVideoFrames();
+        fillNm('call-video-name');
         applyBg(); positionWindow();
 
         const win  = document.getElementById('call-window');
