@@ -499,13 +499,6 @@ if (_chatSettingsEl) _chatSettingsEl.addEventListener('click', () => {
     if (autoToggle) autoToggle.classList.toggle('active', !!settings.autoSendEnabled);
     updateAutoSendUI();
     updateDelayUI();
-    const ercSliderOpen = document.getElementById('emoji-reaction-chance-slider');
-    const ercValOpen = document.getElementById('emoji-reaction-chance-value');
-    if (ercSliderOpen) {
-        const erc = Math.max(0, Math.min(100, Number(settings.emojiReactionChance) || 0));
-        ercSliderOpen.value = erc;
-        if (ercValOpen) ercValOpen.textContent = erc + '%';
-    }
     const immToggle = document.getElementById('immersive-toggle');
     if (immToggle) immToggle.classList.toggle('active', document.body.classList.contains('immersive-mode'));
     const rrStyle = settings.readReceiptStyle || 'icon';
@@ -1112,22 +1105,6 @@ if (_chatSettingsEl) _chatSettingsEl.addEventListener('click', () => {
                 updateQuestionnaireDelayUI();
             });
             if (qMaxSlider) qMaxSlider.addEventListener('change', throttledSaveData);
-
-            const ercSlider = document.getElementById('emoji-reaction-chance-slider');
-            const ercVal = document.getElementById('emoji-reaction-chance-value');
-            if (ercSlider) {
-                function updateEmojiReactionChanceUI() {
-                    const v = Math.max(0, Math.min(100, Number(settings.emojiReactionChance) || 0));
-                    ercSlider.value = v;
-                    if (ercVal) ercVal.textContent = v + '%';
-                }
-                updateEmojiReactionChanceUI();
-                ercSlider.addEventListener('input', (e) => {
-                    settings.emojiReactionChance = parseInt(e.target.value, 10) || 0;
-                    if (ercVal) ercVal.textContent = settings.emojiReactionChance + '%';
-                });
-                ercSlider.addEventListener('change', throttledSaveData);
-            }
 
             const settingToggles = {
                 '#reply-toggle': {

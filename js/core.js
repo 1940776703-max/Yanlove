@@ -190,7 +190,6 @@ autoSendInterval: 5,
         bottomCollapseMode: false,
         emojiMixEnabled: true,
         emojiReactionEnabled: false,
-        emojiReactionChance: 100,
         inspirationPickEnabled: false
             };
         }
@@ -1095,14 +1094,6 @@ function createMessageFragment(msg, prevMsg, nextMsg, lastSenderRef) {
     }
     messageDiv.innerHTML = messageHTML;
 
-    if (msg.reaction) {
-        messageDiv.classList.add('has-reaction');
-        const reactionEl = document.createElement('span');
-        reactionEl.className = 'message-reaction';
-        reactionEl.textContent = msg.reaction;
-        messageDiv.appendChild(reactionEl);
-    }
-
     let actionsHTML = '';
     if (settings.replyEnabled) actionsHTML += `<button class="meta-action-btn reply-btn" title="回复"><i class="fas fa-reply"></i></button>`;
     actionsHTML += `<button class="meta-action-btn reaction-action-btn ${msg.reaction ? 'has-reaction' : ''}" title="${msg.reaction ? '修改情绪反应' : '情绪反应'}"><i class="fas fa-smile"></i></button>`;
@@ -1144,7 +1135,7 @@ function createMessageFragment(msg, prevMsg, nextMsg, lastSenderRef) {
         }
     }
 
-    if (metaHTML !== '') {
+    if (metaHTML !== '' || msg.reaction) {
         const metaDiv = document.createElement('div');
         metaDiv.className = 'message-meta';
         if (!showTimestamp && !metaHTML.includes('timestamp')) {
@@ -1159,6 +1150,12 @@ function createMessageFragment(msg, prevMsg, nextMsg, lastSenderRef) {
             }
         }
         metaDiv.innerHTML = metaHTML;
+        if (msg.reaction) {
+            const reactionEl = document.createElement('div');
+            reactionEl.className = 'message-reaction';
+            reactionEl.textContent = msg.reaction;
+            metaDiv.appendChild(reactionEl);
+        }
         contentWrapper.append(actionsDiv, messageDiv, metaDiv);
     } else {
         contentWrapper.append(actionsDiv, messageDiv);
@@ -1293,6 +1290,36 @@ function getEmotionReaction(text) {
     return null;
 }
 
+function updateMessageReactionDOM(msgId) {
+    const wrapper = document.querySelector(`.message-wrapper[data-msg-id="${msgId}"]`) || document.querySelector(`.message-wrapper[data-id="${msgId}"]`);
+    if (!wrapper) return;
+    const msg = messages.find(function(m) { return String(m.id) === String(msgId); });
+    if (!msg) return;
+    let metaDiv = wrapper.querySelector('.message-meta');
+    if (!metaDiv) {
+        const contentWrapper = wrapper.querySelector('.message-content-wrapper');
+        if (!contentWrapper) return;
+        metaDiv = document.createElement('div');
+        metaDiv.className = 'message-meta';
+        metaDiv.style.height = 'auto';
+        metaDiv.style.marginTop = '2px';
+        contentWrapper.appendChild(metaDiv);
+    }
+    const old = metaDiv.querySelector('.message-reaction');
+    if (old) old.remove();
+    if (msg.reaction) {
+        const el = document.createElement('div');
+        el.className = 'message-reaction';
+        el.textContent = msg.reaction;
+        metaDiv.appendChild(el);
+    }
+    const actionBtn = wrapper.querySelector('.reaction-action-btn');
+    if (actionBtn) {
+        if (msg.reaction) { actionBtn.classList.add('has-reaction'); actionBtn.title = '修改情绪反应'; }
+        else { actionBtn.classList.remove('has-reaction'); actionBtn.title = '情绪反应'; }
+    }
+}
+
 function buildReactionPickerOptions() {
     const set = new Set();
     const rules = (typeof CONSTANTS !== 'undefined' && Array.isArray(CONSTANTS.EMOTION_REACTIONS)) ? CONSTANTS.EMOTION_REACTIONS : [];
@@ -1368,9 +1395,19 @@ window.openReactionPicker = function(message, anchorEl) {
 const addMessage = (message) => {
     if (!(message.timestamp instanceof Date)) message.timestamp = new Date(message.timestamp);
     if (message.sender === 'user' && message.type === 'normal' && !message.reaction && settings.emojiReactionEnabled && String(message.text || '').trim()) {
-        const reactionChance = (settings.emojiReactionChance == null) ? 100 : Number(settings.emojiReactionChance);
+        const reactionChance = 25;
         if ((Math.random() * 100) < reactionChance) {
-            message.reaction = getEmotionReaction(message.text || '');
+            const msgId = message.id;
+            const delay = 20000 + Math.random() * (600000 - 20000);
+            setTimeout(() => {
+                const target = messages.find(m => String(m.id) === String(msgId));
+                if (!target || target.type !== 'normal') return;
+                if (!target.reaction) {
+                    target.reaction = getEmotionReaction(target.text || '');
+                    if (typeof updateMessageReactionDOM === 'function') updateMessageReactionDOM(msgId);
+                    if (typeof throttledSaveData === 'function') throttledSaveData();
+                }
+            }, delay);
         }
     }
     if (message.sender === 'user' && message.type === 'normal' && settings.inspirationPickEnabled && String(message.text || '').trim()) {

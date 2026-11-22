@@ -1035,32 +1035,22 @@
             border-bottom-left-radius: 6px;
         }
 
-        .message.has-reaction {
-            overflow: visible;
-        }
         .message-reaction {
-            position: absolute;
-            right: -6px;
-            bottom: -8px;
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            min-width: 18px;
-            height: 18px;
-            padding: 0 4px;
-            font-size: 13px;
+            height: 16px;
+            min-width: 16px;
+            padding: 0 5px;
+            font-size: 11px;
             line-height: 1;
             background: var(--secondary-bg);
             border: 1px solid var(--border-color);
             border-radius: 999px;
-            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
-            z-index: 3;
+            box-shadow: none;
             pointer-events: none;
             user-select: none;
-        }
-        .message-wrapper.received .message-reaction {
-            right: auto;
-            left: -6px;
+            flex: 0 0 auto;
         }
         .reaction-action-btn.has-reaction i {
             color: var(--accent-color);
